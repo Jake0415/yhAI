@@ -11,14 +11,18 @@
       "mcp__sequential-thinking",
       "mcp__shadcn__search_items_in_registries",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "mcp__slack__slack_list_channels",
+      "mcp__slack__slack_post_message",
+      "mcp__slack__slack_get_channel_history",
+      "mcp__slack__slack_get_thread_replies"
     ],
     "deny": [],
     "ask": []
   },
-  "enableAllProjectMcpServers": true,
+  "enableAllProjectMcpServers": false,
   "enabledMcpjsonServers": [
-    "playwright"
+    "slack"
   ],
   "hooks": {
     "Notification": [

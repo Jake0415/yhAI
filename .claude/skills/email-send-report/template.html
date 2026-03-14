@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.8; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px; }
+    h2 { color: #16213e; margin-top: 30px; }
+    h3 { color: #0f3460; }
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+    .header h1 { color: white; border-bottom: 2px solid rgba(255,255,255,0.3); }
+    .section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #0f3460; }
+    .highlight { background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 15px 0; }
+    .action-required { background: #d4edda; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0; }
+    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+    th { background: #16213e; color: white; padding: 12px; text-align: left; }
+    td { padding: 10px 12px; border-bottom: 1px solid #dee2e6; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; color: #6c757d; font-size: 0.9em; }
+    ul, ol { padding-left: 20px; }
+    li { margin-bottom: 8px; }
+    code { background: #e9ecef; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>YHAI 기획 보고서</h1>
+    <p>{{날짜}} | {{현재 단계}}</p>
+  </div>
+
+  <!-- 본문 내용을 여기에 삽입 -->
+
+  <div class="action-required">
+    <h3>다음 단계 확인 요청</h3>
+    <p>위 내용을 검토하신 후, 다음 단계 진행 여부를 알려주세요.</p>
+    <ul>
+      <li><strong>다음 단계:</strong> {{다음 단계 설명}}</li>
+      <li><strong>예상 산출물:</strong> {{예상 산출물}}</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <p>이 보고서는 YHAI 기획팀에서 자동 생성되었습니다.</p>
+    <p>문의: Slack #test 채널</p>
+  </div>
+</body>
+</html>

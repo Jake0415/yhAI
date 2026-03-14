@@ -21,10 +21,21 @@
 - **⚡ Next.js 15.5.3 전문 가이드**: `@/docs/guides/nextjs-15.md`
 - **📝 폼 처리 완전 가이드**: `@/docs/guides/forms-react-hook-form.md`
 
+## 📂 프로젝트 구조
+
+```
+yhai/
+├── frontend/     # Next.js 15.5.3 프론트엔드
+├── backend/      # 백엔드 서버
+├── docs/         # 프로젝트 문서
+└── CLAUDE.md     # 개발 지침
+```
+
 ## ⚡ 자주 사용하는 명령어
 
 ```bash
-# 개발
+# 프론트엔드 (frontend/ 디렉토리에서 실행)
+cd frontend
 npm run dev         # 개발 서버 실행 (Turbopack)
 npm run build       # 프로덕션 빌드
 npm run check-all   # 모든 검사 통합 실행 (권장)
@@ -36,6 +47,7 @@ npx shadcn@latest add button    # 새 컴포넌트 추가
 ## ✅ 작업 완료 체크리스트
 
 ```bash
+cd frontend
 npm run check-all   # 모든 검사 통과 확인
 npm run build       # 빌드 성공 확인
 ```

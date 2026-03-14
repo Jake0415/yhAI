@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; color: #1a1a2e; background: #f8f9fa; margin: 0; padding: 0; }
+  .container { max-width: 720px; margin: 0 auto; background: #fff; }
+  .header { background: linear-gradient(135deg, #0070f3, #7928ca); color: #fff; padding: 32px 40px; }
+  .header h1 { margin: 0 0 8px; font-size: 24px; font-weight: 700; }
+  .header p { margin: 0; opacity: 0.9; font-size: 14px; }
+  .content { padding: 32px 40px; }
+  h2 { color: #0070f3; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-top: 32px; }
+  h3 { color: #1a1a2e; font-size: 15px; margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: #f1f5f9; color: #475569; padding: 10px 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; }
+  td { padding: 10px 12px; border: 1px solid #e2e8f0; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  .highlight-box { background: #f0f7ff; border-left: 4px solid #0070f3; padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warning-box { background: #fff8e1; border-left: 4px solid #f59e0b; padding: 16px 20px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .cost-card { display: inline-block; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 8px 4px; text-align: center; min-width: 140px; }
+  .cost-card .number { font-size: 24px; font-weight: 700; color: #0070f3; }
+  .cost-card .label { font-size: 12px; color: #64748b; margin-top: 4px; }
+  .pipeline { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-yellow { background: #fef9c3; color: #a16207; }
+  .footer { background: #f1f5f9; padding: 24px 40px; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .decision-item { margin-bottom: 12px; }
+  .decision-id { font-weight: 700; color: #7928ca; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>YHAI 배포/DB 전략 정의서</h1>
+  <p>Vercel + Supabase 기반 배포 아키텍처 | 2026-03-14</p>
+</div>
+
+<div class="content">
+
+<div class="highlight-box">
+  <strong>전략 요약:</strong> Vercel (Next.js 네이티브 배포) + Supabase (DB/Auth/Storage/Realtime 올인원)을 기반으로, 공유 RLS 멀티테넌트에서 시작하여 상위 티어에 전용 프로젝트를 제공하는 배포 전략
+</div>
+
+<h2>1. 핵심 결정사항</h2>
+
+<div class="decision-item">
+  <span class="decision-id">D-008:</span> <strong>Vercel + Supabase 확정</strong><br>
+  기존 GCP Cloud Run + Neon 전략에서 사용자 결정에 따라 Vercel + Supabase로 변경. Vercel은 Next.js 개발사로 최적 배포 지원, Supabase는 올인원 BaaS 제공.
+</div>
+
+<div class="decision-item">
+  <span class="decision-id">D-009:</span> <strong>하이브리드 멀티테넌트</strong><br>
+  Free/Starter는 공유 Supabase + RLS 격리 (비용 효율), Pro 이상은 전용 Supabase 프로젝트 (완전 격리).
+</div>
+
+<div class="decision-item">
+  <span class="decision-id">D-010:</span> <strong>배포 방식</strong><br>
+  MVP: Vercel REST API 파일 인라인 업로드 (Git 불필요). Pro+: GitHub 연동 옵션 (코드 소유권).
+</div>
+
+<h2>2. 시스템 아키텍처</h2>
+
+<table>
+  <tr><th>계층</th><th>서비스</th><th>역할</th></tr>
+  <tr><td>앱 호스팅</td><td>Vercel</td><td>Next.js 네이티브 배포, Edge Network, 프리뷰 배포</td></tr>
+  <tr><td>데이터베이스</td><td>Supabase PostgreSQL</td><td>관계형 DB, Auto-generated REST API</td></tr>
+  <tr><td>인증</td><td>Supabase Auth</td><td>OAuth, Email/Password, Magic Link, SSO</td></tr>
+  <tr><td>스토리지</td><td>Supabase Storage</td><td>파일 업로드, 이미지 변환</td></tr>
+  <tr><td>실시간</td><td>Supabase Realtime</td><td>빌드 진행상황 스트리밍, 데이터 동기화</td></tr>
+  <tr><td>캐시/큐</td><td>Upstash Redis</td><td>배포 큐, 세션 캐시</td></tr>
+</table>
+
+<h2>3. 배포 파이프라인</h2>
+
+<div class="pipeline">
+  사용자 요청 (자연어)<br>
+  &nbsp;&nbsp;&darr;<br>
+  PM Agent &rarr; 요구사항 분석 &rarr; 코드 생성 Agent<br>
+  &nbsp;&nbsp;&darr;<br>
+  <strong>[Phase 1]</strong> Supabase 설정 (~1분)<br>
+  &nbsp;&nbsp;- 공유: 테이블 + RLS 정책 추가<br>
+  &nbsp;&nbsp;- 전용: Management API 프로젝트 생성<br>
+  &nbsp;&nbsp;&darr;<br>
+  <strong>[Phase 2]</strong> Vercel 프로젝트 생성 (~10초) + 환경변수 설정<br>
+  &nbsp;&nbsp;&darr;<br>
+  <strong>[Phase 3]</strong> 코드 배포 (~3분) - 파일 인라인 업로드 + Vercel 빌드<br>
+  &nbsp;&nbsp;&darr;<br>
+  <strong>[Phase 4]</strong> DB 마이그레이션 (~30초) + RLS 적용<br>
+  &nbsp;&nbsp;&darr;<br>
+  <strong>[Phase 5]</strong> 검증 (~30초) - 헬스체크 + DB 연결 테스트<br>
+  &nbsp;&nbsp;&darr;<br>
+  프리뷰 URL 전달: https://app-name.vercel.app<br>
+  <strong>총 소요 시간: 2-8분</strong>
+</div>
+
+<h2>4. 비용 구조</h2>
+
+<h3>플랫폼 기본 비용</h3>
+<div>
+  <div class="cost-card"><div class="number">$95-125</div><div class="label">월 플랫폼 기본</div></div>
+</div>
+
+<h3>규모별 사용자 앱 비용 (하이브리드 전략)</h3>
+<table>
+  <tr><th>규모</th><th>Vercel</th><th>Supabase</th><th>플랫폼</th><th>총 비용</th><th>사용자당</th></tr>
+  <tr><td>100명</td><td>~$50</td><td>~$150</td><td>$95</td><td><strong>~$295/월</strong></td><td>$2.95</td></tr>
+  <tr><td>500명</td><td>~$120</td><td>~$675</td><td>$125</td><td><strong>~$920/월</strong></td><td>$1.84</td></tr>
+  <tr><td>1,000명</td><td>~$700</td><td>~$1,325</td><td>$150</td><td><strong>~$2,175/월</strong></td><td>$2.18</td></tr>
+</table>
+
+<h3>YHAI 요금제</h3>
+<table>
+  <tr><th>티어</th><th>가격</th><th>DB 전략</th><th>배포</th><th>원가</th><th>마진</th></tr>
+  <tr><td><span class="badge badge-green">Free</span></td><td>$0</td><td>공유 RLS</td><td>공유</td><td>~$0.50</td><td>획득 비용</td></tr>
+  <tr><td><span class="badge badge-blue">Starter</span></td><td>$19/월</td><td>공유 RLS</td><td>공유</td><td>~$2.00</td><td>~89%</td></tr>
+  <tr><td><span class="badge badge-blue">Pro</span></td><td>$49/월</td><td>전용 Supabase</td><td>전용 도메인</td><td>~$28</td><td>~43%</td></tr>
+  <tr><td><span class="badge badge-yellow">Business</span></td><td>$149/월</td><td>전용 Team</td><td>전용+도메인</td><td>~$50</td><td>~66%</td></tr>
+  <tr><td><span class="badge badge-yellow">Enterprise</span></td><td>커스텀</td><td>전용+SLA</td><td>Enterprise</td><td>커스텀</td><td>협상</td></tr>
+</table>
+
+<h2>5. 멀티테넌트 전략</h2>
+
+<table>
+  <tr><th>전략</th><th>대상</th><th>방식</th><th>비용</th></tr>
+  <tr><td>공유 RLS</td><td>Free / Starter</td><td>단일 Supabase Pro + tenant_id 기반 RLS 격리</td><td>$25/월 (수백 사용자 공유)</td></tr>
+  <tr><td>전용 프로젝트</td><td>Pro / Business</td><td>사용자별 독립 Supabase Pro 프로젝트</td><td>$25/월/사용자</td></tr>
+  <tr><td>전용 Team</td><td>Enterprise</td><td>Supabase Team/Enterprise + SOC 2, SSO</td><td>$599+/월</td></tr>
+</table>
+
+<h2>6. Vercel + Supabase 주요 가격 (2026)</h2>
+
+<h3>Vercel</h3>
+<table>
+  <tr><th>항목</th><th>Pro ($20/seat/월)</th><th>Enterprise (커스텀)</th></tr>
+  <tr><td>프로젝트 수</td><td>무제한</td><td>무제한</td></tr>
+  <tr><td>일일 배포</td><td>6,000</td><td>24,000</td></tr>
+  <tr><td>Fast Data Transfer</td><td>1 TB (초과: $0.15/GB)</td><td>커스텀</td></tr>
+  <tr><td>동시 빌드</td><td>12</td><td>커스텀</td></tr>
+</table>
+
+<h3>Supabase</h3>
+<table>
+  <tr><th>항목</th><th>Free ($0)</th><th>Pro ($25/월/프로젝트)</th><th>Team ($599/월)</th></tr>
+  <tr><td>프로젝트 수</td><td>2개</td><td>무제한</td><td>무제한</td></tr>
+  <tr><td>DB 크기</td><td>500 MB</td><td>8 GB 포함</td><td>8 GB 포함</td></tr>
+  <tr><td>MAU (인증)</td><td>50,000</td><td>100,000</td><td>100,000</td></tr>
+  <tr><td>파일 스토리지</td><td>1 GB</td><td>100 GB</td><td>100 GB</td></tr>
+  <tr><td>비활성 시</td><td>1주 후 일시정지</td><td>일시정지 없음</td><td>일시정지 없음</td></tr>
+</table>
+
+<h2>7. 리스크 및 대응</h2>
+
+<div class="warning-box">
+  <strong>주요 리스크:</strong>
+  <ul>
+    <li><strong>Supabase Scale-to-Zero 미지원</strong> &rarr; 공유 RLS로 비용 분산</li>
+    <li><strong>Vercel WebSocket 미지원</strong> &rarr; Supabase Realtime / SSE 활용</li>
+    <li><strong>서울 리전 없음 (Supabase)</strong> &rarr; 도쿄 리전 + Vercel Edge 캐시</li>
+    <li><strong>벤더 종속 (Vercel + Supabase)</strong> &rarr; 표준 기술(PostgreSQL, Prisma, Next.js) 사용으로 이식성 확보</li>
+    <li><strong>RLS 정책 버그</strong> &rarr; 표준 템플릿 + 자동 테스트</li>
+    <li><strong>일일 배포 제한 (Pro: 6,000)</strong> &rarr; 배포 큐 관리, Enterprise 전환</li>
+  </ul>
+</div>
+
+<h2>8. 이전 전략 대비 변경점</h2>
+
+<table>
+  <tr><th>항목</th><th>v1 (Cloud Run + Neon)</th><th>v2 (Vercel + Supabase)</th></tr>
+  <tr><td>앱 호스팅</td><td>GCP Cloud Run (Docker)</td><td><strong>Vercel</strong> (Next.js 네이티브)</td></tr>
+  <tr><td>앱 DB</td><td>Neon (Scale-to-Zero)</td><td><strong>Supabase</strong> (올인원)</td></tr>
+  <tr><td>인증</td><td>별도 구축 필요</td><td><strong>Supabase Auth</strong> (내장)</td></tr>
+  <tr><td>스토리지</td><td>Cloudflare R2</td><td><strong>Supabase Storage</strong> (내장)</td></tr>
+  <tr><td>실시간</td><td>별도 WebSocket 서버</td><td><strong>Supabase Realtime</strong> (내장)</td></tr>
+  <tr><td>비용 (100명)</td><td>~$215/월</td><td>~$295/월 (+37%, 올인원 포함)</td></tr>
+</table>
+
+<h2>9. 실행 로드맵</h2>
+
+<table>
+  <tr><th>단계</th><th>기간</th><th>규모</th><th>핵심 작업</th><th>예상 비용</th></tr>
+  <tr><td><span class="badge badge-green">Phase 1</span></td><td>0-3개월</td><td>~100명</td><td>배포 파이프라인, 공유 RLS, 스키마 템플릿 3종</td><td>$150-300/월</td></tr>
+  <tr><td><span class="badge badge-blue">Phase 2</span></td><td>3-12개월</td><td>~500명</td><td>전용 프로젝트, GitHub 연동, 커스텀 도메인</td><td>$500-1,500/월</td></tr>
+  <tr><td><span class="badge badge-yellow">Phase 3</span></td><td>12개월+</td><td>1,000+명</td><td>Enterprise, 멀티리전, 대안 인프라 옵션</td><td>$2,000-5,000/월</td></tr>
+</table>
+
+<h2>10. 산출물 목록</h2>
+
+<table>
+  <tr><th>문서</th><th>파일 경로</th></tr>
+  <tr><td>Vercel + Supabase 조사 리포트</td><td><code>docs/planning/research/vercel-supabase-integration.md</code></td></tr>
+  <tr><td>배포 아키텍처 정의서</td><td><code>docs/planning/proposals/vercel-supabase-architecture.md</code></td></tr>
+  <tr><td>통합 전략 (v2)</td><td><code>docs/planning/proposals/deployment-strategy.md</code></td></tr>
+  <tr><td>의사결정 로그</td><td><code>docs/planning/decisions.md</code> (D-008~D-010)</td></tr>
+</table>
+
+</div>
+
+<div class="footer">
+  <p><strong>YHAI 기획팀</strong> | Gate Review 요청: 위 전략을 검토하시고 승인/수정 요청을 부탁드립니다.</p>
+  <p>승인 시 Plan 2 (정보 아키텍처 설계) 단계로 진행합니다.</p>
+  <p style="margin-top: 12px; color: #94a3b8;">이 보고서는 YHAI 기획 자동화 시스템에 의해 생성되었습니다. | 2026-03-14</p>
+</div>
+
+</div>
+</body>
+</html>
