@@ -636,7 +636,7 @@ Claude의 Extended Thinking 출력을 사용자에게 실시간으로 보여준�
 ### 5.1 YHAI 백엔드에서의 에이전트 오케스트레이션
 
 ```
-YHAI 백엔드 (NestJS)
+YHAI 백엔드 (FastAPI)
 ├── modules/
 │   ├── agent-orchestrator/         # 에이전트 오케스트레이션 모듈
 │   │   ├── orchestrator.service.ts  # PM Agent 실행 관리

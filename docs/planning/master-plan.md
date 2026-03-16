@@ -15,9 +15,9 @@
 | 영역 | 기술 |
 |------|------|
 | **Frontend** | Next.js 15.5.3 + React 19 + TailwindCSS v4 + shadcn/ui |
-| **Backend** | NestJS + TypeScript |
+| **Backend** | FastAPI + TypeScript |
 | **DB** | PostgreSQL + Prisma ORM |
-| **큐** | BullMQ + Redis |
+| **큐** | Celery + Redis |
 | **AI** | Anthropic SDK (채팅) + Claude Agent SDK (오케스트레이션) |
 | **실시간** | SSE (채팅 스트리밍) + WebSocket/Socket.IO (빌드 진행상황) |
 | **공유 타입** | `packages/shared` (npm workspaces 모노레포) |
@@ -47,7 +47,7 @@
               - 역할 배정 (프론트/백/디자인/DB/DevOps)
               - 태스크 분해 & 의존성 그래프
                           ↓
-              [에이전트 실행] (병렬, BullMQ)
+              [에이전트 실행] (병렬, Celery + Redis)
               - 각 에이전트가 코드/설계 생성
                           ↓
               [결과물 조립] → 미리보기 → 자동 배포
@@ -228,7 +228,7 @@ ConversationExpert (id, conversationId, expertId, joinedAt, leftAt?)
 - [ ] **에이전트 오케스트레이션 아키텍처**
   - Conversation Agent / PM Agent / Specialist Agents 상세 설계
   - 에이전트 간 컨텍스트 전달 방식
-  - 태스크 실행 흐름 (BullMQ 큐 설계)
+  - 태스크 실행 흐름 (Celery + Redis 큐 설계)
 - [ ] **인증/인가 설계** (JWT flow, 토큰 관리)
 - [ ] **배포 아키텍처** (Docker, CI/CD, 환경 구성)
 - [ ] 결과물: `docs/planning/system-architecture.md`
@@ -262,7 +262,7 @@ ConversationExpert (id, conversationId, expertId, joinedAt, leftAt?)
 
 ### Phase 0: 기반 인프라
 - [ ] npm workspaces 모노레포 전환
-- [ ] NestJS 프로젝트 초기화 (`backend/`)
+- [ ] FastAPI 프로젝트 초기화 (`backend/`)
 - [ ] Prisma + PostgreSQL + Docker Compose
 - [ ] `packages/shared` (공유 타입, Zod 스키마)
 
@@ -288,7 +288,7 @@ ConversationExpert (id, conversationId, expertId, joinedAt, leftAt?)
 
 ### Phase 4: AI 팀 자동 생성 + 오케스트레이션
 - [ ] PM Agent → 팀 구성 + 태스크 분해
-- [ ] BullMQ 에이전트 실행 엔진
+- [ ] Celery + Redis 에이전트 실행 엔진
 - [ ] Frontend: 팀/빌드 진행 시각화 (WebSocket)
 
 ### Phase 5: 코드 생성 + 미리보기 + 배포

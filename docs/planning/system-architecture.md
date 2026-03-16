@@ -49,7 +49,7 @@
              │ HTTPS                   │ PostgreSQL Wire Protocol
              ▼                         │
 ┌────────────────────────────────────┐ │
-│       NestJS 백엔드 서버             │ │
+│       FastAPI 백엔드 서버             │ │
 │       (별도 서버 / Vercel Pro)       │ │
 │                                    │ │
 │  ┌──────────────────────────────┐  │ │
@@ -91,7 +91,7 @@
           ▼          ▼                 ▼
 ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
 │ Upstash Redis │ │ Anthropic API │ │ Supabase DB  │
-│ (BullMQ 큐)  │ │ (Claude LLM) │ │ (PostgreSQL) │
+│ (Celery + Redis 큐)  │ │ (Claude LLM) │ │ (PostgreSQL) │
 │              │ │              │ │              │
 │ ├─ 빌드 큐   │ │ ├─ Opus 4.6  │ │ ├─ Users     │
 │ ├─ 배포 큐   │ │ ├─ Sonnet 4.6│ │ ├─ Projects  │
@@ -105,14 +105,14 @@
 | 구간 | 프로토콜 | 용도 |
 |------|---------|------|
 | 브라우저 → Vercel | HTTPS | 페이지 렌더링, 정적 자산 |
-| 브라우저 → NestJS | HTTPS (REST) | API 호출 (CRUD) |
-| 브라우저 ← NestJS | SSE (HTTPS) | 채팅 스트리밍, 빌드 사고 과정 |
+| 브라우저 → FastAPI | HTTPS (REST) | API 호출 (CRUD) |
+| 브라우저 ← FastAPI | SSE (HTTPS) | 채팅 스트리밍, 빌드 사고 과정 |
 | 브라우저 ↔ Supabase | WSS | Realtime 이벤트 (빌드/배포 상태) |
-| NestJS → Supabase | PostgreSQL Wire | DB 쿼리 (Prisma/Supabase Client) |
-| NestJS → Anthropic | HTTPS | Claude API 호출 (스트리밍) |
-| NestJS → Upstash | Redis Protocol (TLS) | 작업 큐, 캐시 |
-| NestJS → Vercel API | HTTPS (REST) | 배포 자동화 |
-| NestJS → Supabase Mgmt | HTTPS (REST) | DB 프로비저닝 |
+| FastAPI → Supabase | PostgreSQL Wire | DB 쿼리 (Prisma/Supabase Client) |
+| FastAPI → Anthropic | HTTPS | Claude API 호출 (스트리밍) |
+| FastAPI → Upstash | Redis Protocol (TLS) | 작업 큐, 캐시 |
+| FastAPI → Vercel API | HTTPS (REST) | 배포 자동화 |
+| FastAPI → Supabase Mgmt | HTTPS (REST) | DB 프로비저닝 |
 
 ### 1.3 데이터 흐름 개요
 
@@ -125,18 +125,18 @@
      ▼
 [Next.js API Route / Server Action]
      │
-     ├──(일반 CRUD)──> [NestJS REST API] ──> [Supabase DB]
+     ├──(일반 CRUD)──> [FastAPI REST API] ──> [Supabase DB]
      │
-     ├──(채팅)──> [NestJS SSE Endpoint] ──> [Anthropic API] ──stream──> [브라우저]
+     ├──(채팅)──> [FastAPI SSE Endpoint] ──> [Anthropic API] ──stream──> [브라우저]
      │
-     ├──(빌드 시작)──> [NestJS] ──> [BullMQ] ──> [Agent Orchestrator]
+     ├──(빌드 시작)──> [FastAPI] ──> [Celery + Redis] ──> [Agent Orchestrator]
      │                                              │
      │                                    [Supabase Realtime]
      │                                              │
      │                                              ▼
      │                                        [브라우저 구독]
      │
-     └──(배포)──> [NestJS] ──> [Vercel API + Supabase Mgmt API]
+     └──(배포)──> [FastAPI] ──> [Vercel API + Supabase Mgmt API]
 ```
 
 ---
@@ -218,7 +218,7 @@ frontend/src/
 │   │   ├── client.ts      # 브라우저 클라이언트 (createBrowserClient)
 │   │   ├── server.ts      # 서버 클라이언트 (createServerClient)
 │   │   └── middleware.ts   # 미들웨어 클라이언트
-│   ├── api-client.ts      # NestJS API 호출 래퍼
+│   ├── api-client.ts      # FastAPI API 호출 래퍼
 │   ├── utils.ts           # 유틸리티
 │   └── constants.ts       # 상수
 │
@@ -340,11 +340,11 @@ frontend/src/
          ├─ 쿠키에서 Supabase 세션 추출
          ├─ createServerClient로 인증된 Supabase 클라이언트 생성
          ▼
-    Next.js API Route → NestJS 백엔드
+    Next.js API Route → FastAPI 백엔드
          │
          ├─ Authorization: Bearer {supabase_access_token}
          ▼
-    NestJS AuthGuard
+    FastAPI AuthGuard
          │
          ├─ Supabase JWT 검증 (supabase.auth.getUser)
          ├─ 사용자 정보 Request에 주입
@@ -428,7 +428,7 @@ function useRealtimeTable<T>(table: string, filter: string) {
 
 ## 3. 백엔드 아키텍처
 
-### 3.1 NestJS 모듈 구조
+### 3.1 FastAPI 모듈 구조
 
 ```
 backend/src/
@@ -499,7 +499,7 @@ backend/src/
 │   │   ├── build.module.ts
 │   │   ├── build.controller.ts      # /api/projects/:id/build/*
 │   │   ├── build.service.ts
-│   │   ├── build-queue.service.ts   # BullMQ 큐 관리
+│   │   ├── build-queue.service.ts   # Celery + Redis 큐 관리
 │   │   └── copilot.service.ts       # 빌드 중 사용자 개입
 │   │
 │   ├── agent-orchestrator/          # 에이전트 오케스트레이션
@@ -547,8 +547,8 @@ backend/src/
 │   ├── redis/
 │   │   ├── redis.module.ts
 │   │   └── redis.service.ts         # Upstash Redis 연결
-│   ├── bullmq/
-│   │   ├── bullmq.module.ts
+│   ├── celery/
+│   │   ├── celery.module.ts
 │   │   └── queues/
 │   │       ├── build.queue.ts       # 빌드 작업 큐
 │   │       └── deploy.queue.ts      # 배포 작업 큐
@@ -751,7 +751,7 @@ export class SupabaseService {
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Agent Orchestrator (NestJS)                   │
+│                    Agent Orchestrator (FastAPI)                   │
 │                                                                 │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  OrchestratorService                                      │  │
@@ -762,12 +762,12 @@ export class SupabaseService {
 │  └───────────────┬───────────────────────────────────────────┘  │
 │                  │                                              │
 │          ┌───────▼───────┐                                      │
-│          │   BullMQ 큐   │                                      │
+│          │   Celery + Redis 큐   │                                      │
 │          │  (build-queue) │                                     │
 │          └───────┬───────┘                                      │
 │                  │                                              │
 │  ┌───────────────▼───────────────────────────────────────────┐  │
-│  │  Build Worker (BullMQ Worker)                             │  │
+│  │  Build Worker (Celery + Redis Worker)                             │  │
 │  │                                                           │  │
 │  │  ┌─────────────────────────────────────────────────────┐  │  │
 │  │  │  PM Agent (Opus 4.6) -- Team Lead                   │  │  │
@@ -857,11 +857,11 @@ export class SupabaseService {
            └─ 모든 Phase 완료 → 빌드 검증 (next build) → 배포 트리거
 ```
 
-### 4.3 BullMQ 작업 큐를 통한 에이전트 실행 관리
+### 4.3 Celery + Redis 작업 큐를 통한 에이전트 실행 관리
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    BullMQ 큐 구조                        │
+│                    Celery + Redis 큐 구조                        │
 │                                                         │
 │  build-queue (빌드 작업)                                 │
 │  ├─ Job Data:                                           │
@@ -1224,7 +1224,7 @@ CREATE INDEX idx_projects_public_domain
 │  이유: 단방향 스트리밍, HTTP 기반, 방화벽 친화적        │
 └─────────────────────────────────────────────────────┘
 
-NestJS SSE 컨트롤러 패턴:
+FastAPI SSE 컨트롤러 패턴:
 
   @Controller('api/projects/:id/conversation')
   export class ChatController {
@@ -1346,7 +1346,7 @@ SSE 이벤트 포맷:
 │  └─ system_notice  { message }                      │
 └─────────────────────────────────────────────────────┘
 
-서버 측 이벤트 발행 (NestJS):
+서버 측 이벤트 발행 (FastAPI):
 
   // Supabase Realtime에 이벤트 브로드캐스트
   async publishBuildEvent(projectId: string, event: BuildEvent) {
@@ -1427,7 +1427,7 @@ SSE 이벤트 포맷:
 ### 7.2 Vercel REST API 배포 흐름
 
 ```typescript
-// 배포 서비스 (NestJS)
+// 배포 서비스 (FastAPI)
 @Injectable()
 export class DeploymentService {
   // 1단계: 프로젝트 생성
@@ -1646,7 +1646,7 @@ CREATE POLICY "Users can only access own deployments"
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
 │  │ 큐 모니터링   │  │ DB 모니터링   │  │ 알림              │  │
 │  │ ──────────   │  │ ──────────── │  │ ──────            │  │
-│  │ BullMQ       │  │ Supabase     │  │ 이메일/Slack      │  │
+│  │ Celery + Redis       │  │ Supabase     │  │ 이메일/Slack      │  │
 │  │ Dashboard    │  │ Dashboard    │  │ • 에러 임계값     │  │
 │  │ • 작업 상태  │  │ • 연결 풀    │  │ • 성능 저하       │  │
 │  │ • 실패율     │  │ • 쿼리 성능  │  │ • 빌드 실패       │  │
@@ -1674,7 +1674,7 @@ CREATE POLICY "Users can only access own deployments"
 | Web Vitals LCP | Largest Contentful Paint | ≤ 2.5s | Vercel Analytics |
 | Web Vitals CLS | Cumulative Layout Shift | ≤ 0.1 | Vercel Analytics |
 | AI 토큰 사용량 | 빌드당 평균 토큰 소비 | 추적 | Claude API 응답 |
-| 큐 대기 시간 | 작업 등록~실행 소요 시간 | ≤ 10s | BullMQ |
+| 큐 대기 시간 | 작업 등록~실행 소요 시간 | ≤ 10s | Celery + Redis |
 
 ### 9.3 구조화 로깅 (Structured Logging)
 
@@ -1750,10 +1750,10 @@ export class LoggingService {
 │  └─ 자동 스케일링: Vercel 관리                               │
 │                                                             │
 │  [백엔드 - Vercel Serverless]                                │
-│  ├─ NestJS → Serverless Functions 패키징                     │
+│  ├─ FastAPI → Serverless Functions 패키징                     │
 │  ├─ Cold Start 최적화: 번들 크기 최소화                       │
 │  ├─ 동시성: Vercel Pro (1,000 concurrent)                    │
-│  └─ 장기 실행 작업: Vercel Cron + BullMQ                     │
+│  └─ 장기 실행 작업: Vercel Cron + Celery + Redis                     │
 │                                                             │
 │  [데이터베이스 - Supabase]                                   │
 │  ├─ Connection Pooling: Supavisor (PgBouncer 후속)           │
@@ -1843,7 +1843,7 @@ export class LoggingService {
 | **백엔드 API** | < 5분 | 0 | Serverless 자동 재시작 |
 | **데이터베이스** | < 15분 | < 1분 | Supabase 자동 백업 (일 2회) |
 | **Redis 캐시** | < 1분 | 캐시 손실 허용 | Upstash 자동 복구 |
-| **빌드 세션** | < 5분 | 세션 재시작 | BullMQ 재시도 메커니즘 |
+| **빌드 세션** | < 5분 | 세션 재시작 | Celery + Redis 재시도 메커니즘 |
 
 ---
 
@@ -1853,7 +1853,7 @@ export class LoggingService {
 |----|------|------|------|
 | D-001 | Vercel 배포 | Next.js 네이티브 지원, Edge 최적화 | AWS Amplify, Netlify |
 | D-002 | Supabase 선택 | Auth+DB+Storage+Realtime 통합, RLS | Firebase, PlanetScale |
-| D-003 | BullMQ + Upstash | Serverless Redis 호환, 비용 효율 | AWS SQS, RabbitMQ |
+| D-003 | Celery + Redis + Upstash | Serverless Redis 호환, 비용 효율 | AWS SQS, RabbitMQ |
 | D-004 | Claude API 단일 | 코드 생성 품질 최고, Agent SDK | GPT-4o, Gemini 혼합 |
 | D-005 | Sentry 에러 추적 | Next.js 통합 우수, Source Map 지원 | Datadog, LogRocket |
 | D-006 | Supabase Realtime | DB 연동 자연스러움, RLS 적용 | Socket.io, Pusher |

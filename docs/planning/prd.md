@@ -378,7 +378,7 @@
 | 제약 | 영향 | 대응 |
 |------|------|------|
 | **토큰 제한** (200K 컨텍스트) | 장기 대화/복잡한 빌드에서 컨텍스트 초과 가능 | 대화 요약 + 슬라이딩 윈도우, Phase별 컨텍스트 리셋 |
-| **API Rate Limit** | 동시 빌드 수 제한 | BullMQ 큐로 동시성 관리, 우선순위 큐 |
+| **API Rate Limit** | 동시 빌드 수 제한 | Celery + Redis 큐로 동시성 관리, 우선순위 큐 |
 | **비용** | Opus 호출 비용 높음 ($15/M input, $75/M output) | PM Agent만 Opus, 나머지 Sonnet($3/$15), 도메인 감지는 Haiku($0.25/$1.25) |
 | **응답 시간 변동** | 피크 시간대 지연 가능 | 타임아웃 설정 + 재시도 로직 + 사용자 알림 |
 
@@ -386,7 +386,7 @@
 
 | 제약 | 영향 | 대응 |
 |------|------|------|
-| **Serverless 함수 타임아웃** | 45s (Pro) / 300s (Enterprise) | 장시간 작업은 백그라운드 처리 (BullMQ), SSE 스트리밍 |
+| **Serverless 함수 타임아웃** | 45s (Pro) / 300s (Enterprise) | 장시간 작업은 백그라운드 처리 (Celery + Redis), SSE 스트리밍 |
 | **빌드 타임아웃** | 45분 | 생성 코드 최적화, 의존성 최소화 |
 | **대역폭** | Pro 1TB/월 | 사용자 앱 트래픽 모니터링, CDN 활용 |
 | **파일 업로드 크기** | 100MB/배포 | 코드 분할, 불필요 파일 제외 |
@@ -398,7 +398,7 @@
 | **연결 수** | Free 60개, Pro 200개 | Connection Pooling (PgBouncer) + 공유 RLS 아키텍처 |
 | **스토리지** | Free 1GB, Pro 100GB | 코드 아티팩트는 텍스트 위주 (용량 작음) |
 | **Realtime 연결** | 500 동시 (Pro) | 프로젝트별 채널 격리, 불필요 구독 해제 |
-| **Edge Functions** | 메모리 256MB, 실행 50ms~400s | AI 호출은 NestJS 백엔드에서 처리 |
+| **Edge Functions** | 메모리 256MB, 실행 50ms~400s | AI 호출은 FastAPI 백엔드에서 처리 |
 
 ### 4.4 솔로 개발자 제약
 
@@ -514,7 +514,7 @@ CHATTING -> REQUIREMENTS_REVIEW -> TEAM_PLANNING -> BUILDING
 | R3 | 멀티 에이전트 파일 충돌 | 중간 | 중간 | Git Worktree 격리, 파일 소유권 명시, PM Agent 조율 |
 | R4 | Vercel/Supabase 종속성 | 낮음 | 높음 | 표준 기술(PostgreSQL, Prisma) 사용으로 이식성 확보 |
 | R5 | 사용자 요구사항 모호성 | 높음 | 중간 | 가이디드 대화, 예시 칩, 유사 사례 카드, 전문가 질문 |
-| R6 | 동시 빌드 큐 병목 | 중간 | 중간 | BullMQ 우선순위 큐, 요금제별 동시성 제한 |
+| R6 | 동시 빌드 큐 병목 | 중간 | 중간 | Celery + Redis 우선순위 큐, 요금제별 동시성 제한 |
 | R7 | 1인 개발 병목 | 높음 | 중간 | MVP 최소화, Phase별 릴리스, 관리형 서비스 활용 |
 
 ---

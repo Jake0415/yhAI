@@ -43,15 +43,19 @@ process.stdin.on("end", () => {
   let text;
   if (hookType === "stop") {
     const reason = parsed.hook_event_name || "stop";
-    text = [
+    const summary = parsed.transcript_summary || "";
+    const lines = [
       "\u2705 *\uc791\uc5c5 \uc644\ub8cc \uc54c\ub9bc*",
       "",
       `\u2022 \ud504\ub85c\uc81d\ud2b8: ${projectName}`,
       `\u2022 \uc0c1\ud0dc: ${reason}`,
       `\u2022 \uc2dc\uac04: ${timestamp}`,
-      "",
-      "Claude Code \uc791\uc5c5\uc774 \uc644\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4.",
-    ].join("\n");
+    ];
+    if (summary) {
+      lines.push("", `\ud83d\udcdd *\uc791\uc5c5 \ub0b4\uc6a9:*`, summary);
+    }
+    lines.push("", "Claude Code \uc791\uc5c5\uc774 \uc644\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4.");
+    text = lines.join("\n");
   } else {
     const message = parsed.message || "\uc54c\ub9bc";
     text = [

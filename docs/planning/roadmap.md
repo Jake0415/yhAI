@@ -55,7 +55,8 @@ W1           W2-W5           W6-W8             W9-W10        W11-W12
 - [ ] next-intl 기본 구조 세팅 (한국어 기본)
 
 #### 0-3. 백엔드 세팅
-- [ ] NestJS 프로젝트 초기화 (`backend/`)
+
+- [ ] FastAPI 프로젝트 초기화 (`backend/`)
 - [ ] 모듈 구조 설계 (auth, projects, conversations, experts, requirements, teams, builds, deployments)
 - [ ] 환경변수 설정 (`.env.example`)
 - [ ] Swagger/OpenAPI 문서 자동 생성 설정
@@ -209,7 +210,7 @@ W1           W2-W5           W6-W8             W9-W10        W11-W12
   - Phase 간 결과 전달
 - [ ] Backend: 에이전트별 시스템 프롬프트 관리
   - Frontend Agent: React/Next.js/TailwindCSS 전문
-  - Backend Agent: NestJS/API/Server Actions 전문
+  - Backend Agent: FastAPI/API/Server Actions 전문
   - DB Agent: PostgreSQL/Prisma/RLS 전문
   - QA Agent: 테스트/검증 전문
 

@@ -271,7 +271,7 @@
     |
     |  2. 기술 스택 결정:
     |     - 프론트엔드: Next.js + React (SPA + SSR)
-    |     - 백엔드: NestJS + Prisma
+    |     - 백엔드: FastAPI + Prisma
     |     - 결제: Bootpay 정기결제 API
     |     - 배포: Vercel + Railway
     |
@@ -860,7 +860,7 @@ PM Agent는 요구사항 문서를 입력받아 다음 3단계를 순차 실행�
 |   - 외부 서비스 연동 필요 여부 판단           |
 |                                          |
 |   예: "구독 결제 + 배송 추적 + 회원 관리"     |
-|   --> Next.js, NestJS, Prisma, Bootpay    |
+|   --> Next.js, FastAPI, Prisma, Bootpay    |
 +------------------------------------------+
        |
        v

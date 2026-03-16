@@ -48,7 +48,7 @@ PM Agent가 요구사항을 분석하여 필요한 역할을 판단하는 과정
        |
        |  2. 기술 스택 결정:
        |     - 프론트엔드: Next.js + React (SPA + SSR)
-       |     - 백엔드: NestJS + Prisma
+       |     - 백엔드: FastAPI + Prisma
        |     - 결제: Bootpay 정기결제 API
        |     - 배포: Vercel + Railway
        |
@@ -784,7 +784,7 @@ Phase 4: AI 팀 자동 생성 + 오케스트레이션
   - [ ] PM Agent: 요구사항 분석 -> 역할 판단 로직
   - [ ] PM Agent: Phase 분해 + 의존성 그래프 생성
   - [ ] Git Worktree 관리 모듈 (생성/삭제/머지)
-  - [ ] 공유 태스크 리스트 (BullMQ + Redis)
+  - [ ] 공유 태스크 리스트 (Celery + Redis)
   - [ ] 메시지박스 (에이전트 간 통신 채널)
   - [ ] 가드레일 인프라: max_steps, 토큰 예산, 반복 감지, 시맨틱 완료 체크
   - [ ] 실시간 비용 대시보드 (WebSocket)

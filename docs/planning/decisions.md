@@ -8,8 +8,8 @@
 - **결정**: frontend/ 와 backend/ 폴더로 분리
 - **근거**: 독립적 배포, 기술 스택 분리, 팀 작업 병렬화
 
-### D-002: 백엔드 프레임워크 — NestJS
-- **결정**: NestJS + TypeScript
+### D-002: 백엔드 프레임워크 — FastAPI
+- **결정**: FastAPI + TypeScript
 - **근거**: 프론트엔드와 TypeScript 공유, WebSocket/SSE 내장 지원, 모듈 기반 아키텍처
 
 ### D-003: 결과물 범위 — 풀스택 + 자동 배포

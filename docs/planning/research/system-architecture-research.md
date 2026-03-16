@@ -2,7 +2,7 @@
 
 - 작성일: 2026-03-14
 - 조사 목적: YHAI Plan 3 시스템 아키텍처 설계를 위한 핵심 기술 패턴 및 구현 방법 조사
-- 기술 스택 범위: Next.js 15 + Supabase, NestJS + BullMQ, Claude API, Vercel REST API, Upstash Redis
+- 기술 스택 범위: Next.js 15 + Supabase, FastAPI + Celery + Redis, Claude API, Vercel REST API, Upstash Redis
 
 ---
 
@@ -226,12 +226,12 @@ YHAI의 AI 웹사이트 빌드 시스템은 **계층형 메타 에이전트 설�
 - **Backend Agent**: API 엔드포인트, 데이터 모델 생성
 - **Deployment Agent**: Vercel 배포 실행, 환경변수 설정
 
-#### 2.2 NestJS + BullMQ 태스크 큐 아키텍처
+#### 2.2 FastAPI + Celery + Redis 태스크 큐 아키텍처
 
 ```typescript
 // agent-queue.module.ts
-import { BullModule } from '@nestjs/bullmq'
-import { Module } from '@nestjs/common'
+import { BullModule } from 'celery'
+import { Module } from 'fastapi'
 
 @Module({
   imports: [
@@ -254,9 +254,9 @@ export class AgentQueueModule {}
 
 ```typescript
 // agent-orchestrator.service.ts
-import { InjectQueue } from '@nestjs/bullmq'
-import { Injectable } from '@nestjs/common'
-import { Queue } from 'bullmq'
+import { InjectQueue } from 'celery'
+import { Injectable } from 'fastapi'
+import { Queue } from 'celery'
 
 export interface AgentTask {
   taskId: string
@@ -362,8 +362,8 @@ export class AgentOrchestratorService {
 
 ```typescript
 // agent-worker.processor.ts
-import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
-import { Job } from 'bullmq'
+import { Processor, WorkerHost, OnWorkerEvent } from 'celery'
+import { Job } from 'celery'
 import Anthropic from '@anthropic-ai/sdk'
 
 @Processor('agent-tasks')
@@ -435,7 +435,7 @@ export class AgentWorkerProcessor extends WorkerHost {
 
 ```typescript
 // build-state.service.ts
-import { Injectable } from '@nestjs/common'
+import { Injectable } from 'fastapi'
 import { Redis } from '@upstash/redis'
 
 @Injectable()
@@ -483,14 +483,14 @@ export class BuildStateService {
     │
     ▼
 ┌─────────────────────────────────────────┐
-│          NestJS API Gateway             │
+│          FastAPI API Gateway             │
 │  POST /builds → BuildsController       │
 │  → AgentOrchestratorService            │
 └─────────────────┬───────────────────────┘
                   │ 태스크 그래프 생성 + 위상 정렬
                   ▼
 ┌─────────────────────────────────────────┐
-│         Upstash Redis (BullMQ)          │
+│         Upstash Redis (Celery + Redis)          │
 │  Queue: agent-tasks                     │
 │  ┌─────────┐ ┌─────────┐ ┌──────────┐  │
 │  │req-task │ │arch-task│ │fe-task   │  │
@@ -542,7 +542,7 @@ export class BuildStateService {
 
 **YHAI 권장 아키텍처:**
 - **AI 채팅 스트리밍**: SSE (Claude API → Next.js Route Handler → 클라이언트)
-- **빌드 진행상황 업데이트**: Supabase Realtime (NestJS → Supabase → 클라이언트)
+- **빌드 진행상황 업데이트**: Supabase Realtime (FastAPI → Supabase → 클라이언트)
 - **프로젝트 목록 실시간 갱신**: Supabase Realtime (DB Postgres Changes)
 
 #### 3.2 AI 채팅 스트리밍 구현 (SSE)
@@ -668,9 +668,9 @@ export function ChatWindow({ buildId }: { buildId: string }) {
 #### 3.3 빌드 진행상황 실시간 업데이트 (Supabase Realtime)
 
 ```typescript
-// NestJS 워커에서 Supabase Realtime으로 진행상황 브로드캐스트
+// FastAPI 워커에서 Supabase Realtime으로 진행상황 브로드캐스트
 // build-progress.service.ts
-import { Injectable } from '@nestjs/common'
+import { Injectable } from 'fastapi'
 import { createClient } from '@supabase/supabase-js'
 
 @Injectable()
@@ -774,7 +774,7 @@ export function BuildProgressMonitor({ buildId }: { buildId: string }) {
            │ streaming                     │ insert
            ▼                               │
 ┌─────────────────────┐    ┌──────────────────────────────┐
-│    Claude API       │    │      NestJS Workers           │
+│    Claude API       │    │      FastAPI Workers           │
 │  claude-opus-4-6    │    │  BuildProgressService         │
 │  SSE stream         │    │  supabase.from('build_events')│
 └─────────────────────┘    │  .insert(...)                 │
@@ -796,7 +796,7 @@ Vercel REST API를 통한 프로그래매틱 배포는 3단계로 구성된다:
 
 ```typescript
 // vercel-deployment.service.ts
-import { Injectable } from '@nestjs/common'
+import { Injectable } from 'fastapi'
 import crypto from 'crypto'
 
 interface VercelFile {
@@ -1011,7 +1011,7 @@ export class DeploymentAgentService {
 #### 4.4 Vercel 배포 플로우 다이어그램
 
 ```
-Deployment Agent (NestJS Worker)
+Deployment Agent (FastAPI Worker)
     │
     │ 1. 생성된 파일들 수집 (Redis에서)
     ▼
@@ -1140,7 +1140,7 @@ USING (
   )
 );
 
--- INSERT는 service_role만 가능 (NestJS 서버에서만 삽입)
+-- INSERT는 service_role만 가능 (FastAPI 서버에서만 삽입)
 -- authenticated 사용자에게 INSERT 정책 없음 = 불가
 ```
 
@@ -1188,8 +1188,8 @@ export const supabaseAdmin = createClient(
 ```
 
 ```typescript
-// NestJS에서 API 키 암호화 저장
-import { Injectable } from '@nestjs/common'
+// FastAPI에서 API 키 암호화 저장
+import { Injectable } from 'fastapi'
 import crypto from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
@@ -1321,7 +1321,7 @@ export async function middleware(request: NextRequest) {
             │ service_role (RLS 우회)
             ▼
 ┌─────────────────────────────────────────────────────────┐
-│              NestJS Workers (서버 내부)                  │
+│              FastAPI Workers (서버 내부)                  │
 │  supabaseAdmin (service_role key)                        │
 │  → 빌드 이벤트 INSERT, 배포 결과 UPDATE                  │
 │  → 클라이언트에 절대 노출 금지                            │
@@ -1345,7 +1345,7 @@ export async function middleware(request: NextRequest) {
 
 | 솔루션 | 런타임 | 지속성 | 우선순위 | 부모-자식 작업 | 사용 적합성 |
 |--------|--------|--------|----------|--------------|------------|
-| BullMQ + Upstash | Node.js | 영구 | 지원 | 지원 | YHAI 최적 |
+| Celery + Redis + Upstash | Node.js | 영구 | 지원 | 지원 | YHAI 최적 |
 | AWS SQS | 모든 언어 | 영구 | 제한적 | 미지원 | 오버스펙 |
 | RabbitMQ | 모든 언어 | 영구 | 지원 | 지원 | 인프라 부담 |
 | Inngest | Serverless | 영구 | 지원 | 지원 | Vercel 환경 대안 |
@@ -1358,13 +1358,13 @@ export async function middleware(request: NextRequest) {
 
 1. **인증 레이어**: `@supabase/ssr`의 `createServerClient` + 미들웨어 세션 갱신 패턴을 그대로 채택. `getSession()` 대신 반드시 `getUser()` 사용.
 
-2. **에이전트 오케스트레이션**: NestJS + BullMQ(Upstash Redis) 조합으로 에이전트 태스크 큐 구성. 위상 정렬로 의존성 관리, Redis Hash로 에이전트 간 결과 공유.
+2. **에이전트 오케스트레이션**: FastAPI + Celery + Redis(Upstash Redis) 조합으로 에이전트 태스크 큐 구성. 위상 정렬로 의존성 관리, Redis Hash로 에이전트 간 결과 공유.
 
 3. **스트리밍 이중 채널**: AI 대화 응답은 SSE(Next.js Route Handler → ReadableStream), 빌드 진행상황은 Supabase Realtime(Broadcast)으로 분리 운영.
 
 4. **Vercel 배포 자동화**: 파일 SHA1 업로드 → 배포 생성 → 상태 폴링 3단계 플로우. 환경변수는 `/v9/projects/{id}/env` API로 upsert.
 
-5. **보안**: RLS 정책에서 `(SELECT auth.uid()) = user_id` 패턴 사용 (함수 호출 캐싱으로 성능 최적화). `service_role` 키는 NestJS 서버에서만, 외부 API 키는 AES-256 암호화 후 저장.
+5. **보안**: RLS 정책에서 `(SELECT auth.uid()) = user_id` 패턴 사용 (함수 호출 캐싱으로 성능 최적화). `service_role` 키는 FastAPI 서버에서만, 외부 API 키는 AES-256 암호화 후 저장.
 
 6. **Rate Limiting**: `@upstash/ratelimit`을 Next.js 미들웨어에 통합하여 API 남용 방지. Sliding Window 알고리즘 권장.
 
@@ -1374,7 +1374,7 @@ export async function middleware(request: NextRequest) {
 
 - Vercel Serverless Functions는 WebSocket을 지원하지 않음 → 반드시 SSE 또는 외부 WebSocket 서비스 사용
 - Supabase `service_role` 키가 클라이언트에 노출되면 모든 RLS 정책이 무력화됨
-- BullMQ의 부모-자식 작업 계층 구조를 활용하면 에이전트 의존성 관리가 단순화됨
+- Celery + Redis의 부모-자식 작업 계층 구조를 활용하면 에이전트 의존성 관리가 단순화됨
 - Claude API 스트리밍은 `content_block_delta` 이벤트의 `text_delta`를 소비하는 방식으로 구현
 
 ---
@@ -1387,11 +1387,11 @@ export async function middleware(request: NextRequest) {
 - [Upload Deployment Files | Vercel REST API](https://vercel.com/docs/rest-api/deployments/upload-deployment-files)
 - [Create a new deployment | Vercel REST API](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment)
 - [Streaming Messages - Claude API Docs](https://platform.claude.com/docs/en/build-with-claude/streaming)
-- [Using BullMQ with NestJS for Background Job Processing | Medium](https://mahabub-r.medium.com/using-bullmq-with-nestjs-for-background-job-processing-320ab938048a)
+- [Using Celery + Redis with FastAPI for Background Job Processing | Medium](https://mahabub-r.medium.com/using-celery-with-nestjs-for-background-job-processing-320ab938048a)
 - [Multi-Agent Orchestration: Running 10+ Claude Instances in Parallel | DEV Community](https://dev.to/bredmond1019/multi-agent-orchestration-running-10-claude-instances-in-parallel-part-3-29da)
 - [Using SSE to stream LLM responses in Next.js | Upstash Blog](https://upstash.com/blog/sse-streaming-llm-responses)
 - [Enforcing Row Level Security in Supabase: Multi-Tenant Architecture | DEV Community](https://dev.to/blackie360/-enforcing-row-level-security-in-supabase-a-deep-dive-into-lockins-multi-tenant-architecture-4hd2)
 - [Multi-Tenant Applications with RLS on Supabase | AntStack Blog](https://www.antstack.com/blog/multi-tenant-applications-with-rls-on-supabase-postgress/)
 - [WebSocket vs SSE vs Long Polling: Choosing Real-time in 2025 | potapov.me](https://potapov.me/en/make/websocket-sse-longpolling-realtime)
-- [Scaling NestJS Applications with BullMQ and Redis | Medium](https://medium.com/@kumarasinghe.it/scaling-nestjs-applications-with-bullmq-and-redis-a-deep-dive-into-background-job-processing-ce6b6fb5017f)
+- [Scaling FastAPI Applications with Celery + Redis | Medium](https://medium.com/@kumarasinghe.it/scaling-nestjs-applications-with-celery-and-redis-a-deep-dive-into-background-job-processing-ce6b6fb5017f)
 - [Claude Agent SDK Best Practices | Skywork.ai](https://skywork.ai/blog/claude-agent-sdk-best-practices-ai-agents-2025/)
