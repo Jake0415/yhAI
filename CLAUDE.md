@@ -1,6 +1,8 @@
 # 🤖 Claude Code 개발 지침
 
-**YHAI**는 AI 전문가 대화 기반 웹 서비스 자동 생성 플랫폼입니다.
+**YHAI**는 AI 전문가 팀 기반 종합 창업 지원 플랫폼입니다.
+
+> 창업 아이템을 입력하면, AI 전문가 팀(창업전략, 법률, 세무, 상권, 마케팅, 자금)이 단계적으로 가이드해주는 서비스
 
 ## 🛠️ 핵심 기술 스택
 
@@ -19,20 +21,15 @@
 - **ORM**: SQLAlchemy + Alembic (마이그레이션)
 - **DB**: Supabase PostgreSQL
 - **Auth**: Supabase Auth (JWT)
-- **Queue**: Celery + Redis (비동기 빌드 작업)
+- **Queue**: Celery + Redis (비동기 작업)
 - **AI**: Claude API (Anthropic SDK)
 - **Docs**: Swagger/OpenAPI (FastAPI 내장)
 
 ## 📚 개발 가이드
 
 - **🔧 ECC Tools**: `@/.claude/ECC_TOOLS.md`
-- **🗺️ 개발 로드맵**: `@/docs/ROADMAP.md`
-- **📋 프로젝트 요구사항**: `@/docs/PRD.md`
-- **📁 프로젝트 구조**: `@/docs/guides/project-structure.md`
-- **🎨 스타일링 가이드**: `@/docs/guides/styling-guide.md`
-- **🧩 컴포넌트 패턴**: `@/docs/guides/component-patterns.md`
-- **⚡ Next.js 15.5.3 전문 가이드**: `@/docs/guides/nextjs-15.md`
-- **📝 폼 처리 완전 가이드**: `@/docs/guides/forms-react-hook-form.md`
+- **📋 PRD**: `@/docs/planning/prd.md`
+- **📝 의사결정 로그**: `@/docs/planning/decisions.md`
 
 ## 📂 프로젝트 구조
 
@@ -41,6 +38,7 @@ yhai/
 ├── frontend/     # Next.js 15.5.3 프론트엔드
 ├── backend/      # FastAPI 백엔드 서버
 ├── docs/         # 프로젝트 문서
+│   └── planning/ # 기획 문서 (PRD, 조사, 제안)
 └── CLAUDE.md     # 개발 지침
 ```
 
@@ -75,5 +73,3 @@ npm run build       # 빌드 성공 확인
 cd backend
 pytest              # 테스트 실행
 ```
-
-💡 **상세 규칙은 위 개발 가이드 문서들을 참조하세요**

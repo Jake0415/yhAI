@@ -6,15 +6,6 @@
 
 ## 에이전트 팀 구조
 
-### 개발팀 (`.claude/agents/dev/`)
-
-| Agent | Role | Model |
-|-------|------|-------|
-| `dev-lead` | **팀 리더** — 작업 분석, 위임, 검토 | opus |
-| `nextjs-app-developer` | 프론트엔드 구현 (App Router) | sonnet |
-| `ui-markup-specialist` | UI 마크업 및 스타일링 | sonnet |
-| `development-planner` | 로드맵/태스크 기획 지원 | sonnet |
-
 ### 기획팀 (`.claude/agents/planning/`)
 
 | Agent | Role | Model |
@@ -22,25 +13,6 @@
 | `team-leader` | **팀 리더** — 기획 워크플로우 총괄 | opus |
 | `web-researcher` | 웹 리서치 및 분석 | sonnet |
 | `service-planner` | 서비스 전략 및 개선안 | opus |
-
-### 품질팀 (`.claude/agents/quality/`)
-
-| Agent | Role | Model |
-|-------|------|-------|
-| `quality-lead` | **팀 리더** — 품질 트리아지, 리뷰 통합 | opus |
-| `code-reviewer` | 일반 코드 품질 리뷰 | sonnet |
-| `python-reviewer` | Python/FastAPI 코드 리뷰 | sonnet |
-| `database-reviewer` | PostgreSQL/Supabase 리뷰 | sonnet |
-| `security-reviewer` | 보안 취약점 탐지 | sonnet |
-| `e2e-runner` | E2E 테스트 실행 | sonnet |
-| `tdd-guide` | 테스트 주도 개발 가이드 | sonnet |
-
-### 자문 (Advisory)
-
-| Agent | Role | Model |
-|-------|------|-------|
-| `architect` | 시스템 설계 의사결정 자문 | opus |
-| `planner` | 구현 계획 수립 자문 | opus |
 
 ## Skills (`.claude/skills/`)
 
